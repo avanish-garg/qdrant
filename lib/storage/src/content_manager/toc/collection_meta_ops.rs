@@ -841,6 +841,16 @@ pub(crate) fn apply_alias_actions(
                         new_alias_name,
                     },
             }) => {
+                // `new_alias_name` must not name a collection, mirroring CreateAlias's
+                // check above — otherwise `resolve_name` (which checks aliases before
+                // collections) would let the renamed alias silently intercept requests
+                // meant for that collection.
+                if collection_exists(new_alias_name) {
+                    return Err(StorageError::already_exists(format!(
+                        "Collection `{new_alias_name}` already exists"
+                    )));
+                }
+
                 if !aliases.rename(old_alias_name, new_alias_name.clone()) {
                     return Err(StorageError::not_found(format!(
                         "Alias {old_alias_name} does not exist"
